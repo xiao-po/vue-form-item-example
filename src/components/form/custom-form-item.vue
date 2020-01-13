@@ -99,7 +99,9 @@
         }
 
         set v(newValue: string) {
-            this.control.setValue(newValue);
+            if (this.mode === FormItemControlMode.control) {
+                this.control.setValue(newValue);
+            }
             this.$emit('change', newValue);
         }
 
