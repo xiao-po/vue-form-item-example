@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <custom-form-item @change="validate" v-for="item in formItemList" :options="item" :control="formModel.controls[item.name]" >
+    <custom-form-item @change="validate" v-for="item in formItemList" :options="item" :control="formModel.controls[item.name]" :key="item.name">
 
     </custom-form-item>
     <el-col :span="12">

@@ -1,6 +1,5 @@
 <template>
-    <el-col v-show="!options.hidden" class=" form-item-small"
-            :class="{'has-error': !isModelMode && control.invalid, 'pending': !isModelMode && control.status === 'PENDING'}"
+    <el-col v-show="!options.hidden" class=" form-item-small" :class="{'has-error': _hasError, 'pending': _isPending}"
             :span='options.span' :key="options.name">
         <div class="form-item-label" :style='{minWidth: options.labelMinWidth}' :class="[...options.labelClassName]">
             {{options.label}} :
@@ -9,20 +8,20 @@
             <el-date-picker v-if="options.type === 'date'" v-model="v"
                             :size="options.size"></el-date-picker>
             <el-radio-group v-else-if="options.type === 'radio'" v-model="v" :size="options.size">
-                <el-radio-button v-for="option in selectOptions" :label="option.value" :size="options.size"
+                <el-radio-button v-for="option in options.selectOptions" :label="option.value" :size="options.size"
                                  :value="option.value" :key="option.value">{{option.label}}
                 </el-radio-button>
             </el-radio-group>
             <el-cascader
                     v-else-if="options.type === 'cascsder'"
-                    :options="selectOptions"
+                    :options="options.selectOptions"
                     :props="{ checkStrictly: true }"
                     clearable></el-cascader>
-            <el-select v-else-if="options.type === 'select'" v-model="v" :size="options.size">
-                <el-option v-for="option in selectOptions" :label="option.label" :size="options.size"
+            <el-select v-else-if="options.type === 'select'" v-model="v" :size="options.size" >
+                <el-option v-for="option in options.selectOptions" :label="option.label" :size="options.size"
                            :value="option.value" :key="option.value"></el-option>
             </el-select>
-            <slot v-else-if="hasExtra && !DefaultFormControlType.includes(options.type)" name="extra"></slot>
+            <slot v-else-if="hasExtra && !DefaultFormControlType.includes(options.type)" name="extra" v-bind:value="v"></slot>
             <el-input v-else :size="options.size" v-model="v" :type='options.type'></el-input>
         </div>
     </el-col>
@@ -30,8 +29,8 @@
 
 <script lang="ts">
     import {Component, Model, Prop, Vue} from "vue-property-decorator";
+    import {FormItemModel} from "@/model/base/form.model";
     import {FormControl} from "@/utils/form-control.model";
-    import {FormItemModel, FormOption} from "@/model/base/form.model";
 
     const DefaultFormControlType = [
         'date',
@@ -57,8 +56,11 @@
         @Prop()
         control!: FormControl;
 
-        @Prop({type: Array, required: false})
-        selectOptions!: FormOption[];
+        @Prop({type: Boolean})
+        disabled!: Boolean;
+
+        @Prop({type: Boolean})
+        error!: Boolean;
 
         @Prop({type: Object, required: true})
         options!: FormItemModel;
@@ -66,6 +68,10 @@
         DefaultFormControlType = DefaultFormControlType;
 
         mode!: FormItemControlMode;
+
+        created(): void {
+            console.log(this);
+        }
 
         data() {
             let controlMode: FormItemControlMode;
@@ -86,7 +92,8 @@
 
         get hasExtra() {
             const extraSlot = this.$slots['extra'];
-            return extraSlot && extraSlot.length > 0;
+            const scopedSlotsLength = Object.keys(this.$scopedSlots).length;
+            return (extraSlot && extraSlot.length > 0) || (scopedSlotsLength > 0);
         }
 
         get v(): string {
@@ -99,15 +106,27 @@
         }
 
         set v(newValue: string) {
-            if (this.mode === FormItemControlMode.control) {
+            if (!this._isModelMode) {
                 this.control.setValue(newValue);
             }
             this.$emit('change', newValue);
         }
 
 
-        get isModelMode() {
+        get _isModelMode() {
             return this.mode === FormItemControlMode.model;
+        }
+
+        get _hasError() {
+            return !this._isModelMode && this.control.dirty && this.control.invalid;
+        }
+
+        get _isPending() {
+            return !this._isModelMode && this.control.dirty && this.control.status === 'PENDING';
+        }
+
+        get _disabled() {
+            return this.control.disabled || this.disabled;
         }
     }
 </script>
